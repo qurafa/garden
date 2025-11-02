@@ -1,0 +1,41 @@
+name: pixel_garden
+description: A pixel garden music visualizer connected to Spotify
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # Spotify Integration
+  spotify: ^0.13.2
+
+  # For controlling the spotify app
+  # spotify_sdk: ^2.3.0
+  
+  # HTTP & Auth
+  http: ^1.1.0
+  url_launcher: ^6.2.1
+  app_links: ^6.3.2
+  
+  # Local Storage
+  shared_preferences: ^2.2.2
+  
+  # UI
+  flutter_svg: ^2.0.9
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
