@@ -696,148 +696,115 @@ Widget _buildGardenCanvas() {
   }
 
   Future<void> _playTrackInGarden(FlowerData flower) async {
-  if (flower.spotifyUri == null) {
-    _showErrorSnackBar('Track URI not available');
-    return;
-  }
-  
-  final spotifyService = Provider.of<SpotifyService>(context, listen: false);
-  
-  // Show loading indicator
-  if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            ),
-            SizedBox(width: 12),
-            Text('Starting playback...'),
-          ],
-        ),
-        duration: Duration(seconds: 3),
-        backgroundColor: Color(0xFF1DB954),
-      ),
-    );
-  }
-  
-  // Construct playlist URI
-  final playlistUri = 'spotify:playlist:${widget.playlistId}';
-  
-  // Try to play with fallback strategies
-  final success = await spotifyService.playTrackInPlaylist(
-    playlistUri: playlistUri,
-    trackUri: flower.spotifyUri!,
-    shuffle: true,
-  );
-  
-  if (mounted) {
-    // Clear loading indicator
-    ScaffoldMessenger.of(context).clearSnackBars();
+    if (flower.spotifyUri == null) {
+      _showErrorSnackBar('Track URI not available');
+      return;
+    }
     
-    if (success) {
-      // Check if Spotify was opened (vs just playing on device)
-      final devices = await spotifyService.getDevices();
-      final hasActiveDevice = devices.any((d) => d.isActive == true);
+    final spotifyService = Provider.of<SpotifyService>(context, listen: false);
+    
+    // Show loading
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(width: 12),
+              Text('Starting playback...'),
+            ],
+          ),
+          duration: Duration(seconds: 5),
+          backgroundColor: Color(0xFF1DB954),
+        ),
+      );
+    }
+    
+    final playlistUri = 'spotify:playlist:${widget.playlistId}';
+    
+    final result = await spotifyService.playTrackInPlaylist(
+      playlistUri: playlistUri,
+      trackUri: flower.spotifyUri!,
+      shuffle: true,
+    );
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       
-      if (hasActiveDevice) {
-        // Played on existing device
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('♪ ${flower.trackName}'),
-            backgroundColor: const Color(0xFF1DB954),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      } else {
-        // Spotify was opened
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Spotify opened! Next time you can play directly in the app.',
+      switch (result) {
+        case PlaybackResult.success:
+          // Played seamlessly
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.music_note, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      flower.trackName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF1DB954),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
             ),
-            backgroundColor: Color(0xFF1DB954),
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 3),
-          ),
-        );
+          );
+          break;
+          
+        case PlaybackResult.openedSpotify:
+          // Spotify was opened
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Playing: ${flower.trackName}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Next time you can play directly without opening Spotify!',
+                    style: TextStyle(fontSize: 12, color: Colors.white70),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF1DB954),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          break;
+          
+        case PlaybackResult.failed:
+          _showErrorSnackBar('Could not start playback. Please check Spotify.');
+          break;
       }
-    } else {
-      _showErrorSnackBar('Could not start playback. Please check Spotify.');
     }
   }
-}
-
-  // Future<void> _playTrackInGarden(FlowerData flower) async {
-  //   if (flower.spotifyUri == null) {
-  //     _showErrorSnackBar('Track URI not available');
-  //     return;
-  //   }
-    
-  //   final spotifyService = Provider.of<SpotifyService>(context, listen: false);
-    
-  //   // Check if there's an active device
-  //   final hasDevice = await spotifyService.hasActiveDevice();
-    
-  //   if (!hasDevice) {
-  //     _showNoDeviceDialog();
-  //     return;
-  //   }
-    
-  //   // Show loading
-  //   if (mounted) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(
-  //         content: Row(
-  //           children: [
-  //             SizedBox(
-  //               width: 20,
-  //               height: 20,
-  //               child: CircularProgressIndicator(
-  //                 strokeWidth: 2,
-  //                 color: Colors.white,
-  //               ),
-  //             ),
-  //             SizedBox(width: 12),
-  //             Text('Starting playback...'),
-  //           ],
-  //         ),
-  //         duration: Duration(seconds: 2),
-  //         backgroundColor: Color(0xFF1DB954),
-  //       ),
-  //     );
-  //   }
-    
-  //   // Construct playlist URI from playlistId
-  //   final playlistUri = 'spotify:playlist:${widget.playlistId}';
-    
-  //   // Start playing
-  //   final success = await spotifyService.playTrackInPlaylist(
-  //     playlistUri: playlistUri,
-  //     trackUri: flower.spotifyUri!,
-  //     shuffle: true, // Play the garden on shuffle
-  //   );
-    
-  //   if (mounted) {
-  //     if (success) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text('Now playing: ${flower.trackName}'),
-  //           backgroundColor: const Color(0xFF1DB954),
-  //         ),
-  //       );
-  //     } else {
-  //       _showErrorSnackBar('Failed to start playback');
-  //     }
-  //   }
-  // }
   
   void _showNoDeviceDialog() {
     showDialog(
