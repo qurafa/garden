@@ -6,9 +6,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class SpotifyService extends ChangeNotifier {
-  // IMPORTANT: Replace these with your Spotify Developer credentials
-  static const String clientId = '49bdbed8c1c946fabe06fd4419c828be';
-  static const String clientSecret = '642b96789dc8463b87aeae9cf98c22a5';
+  static const String clientId = 'CLIENT_ID';
+  static const String clientSecret = 'CLIENT_SECRET';
   static const String redirectUri = 'pixelgarden://callback';
   
   spotify_sdk.SpotifyApi? _spotify;
