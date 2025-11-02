@@ -3,8 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spotify/spotify.dart' as spotify_sdk;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io' show Platform;
 
 class SpotifyService extends ChangeNotifier {
   static String get clientId => dotenv.env['SPOTIFY_CLIENT_ID'] ?? '';
@@ -346,81 +347,280 @@ class SpotifyService extends ChangeNotifier {
   }
 
   /// Start playing a specific track in the context of a playlist
-  Future<bool> playTrackInPlaylist({
+  /// Play track with multiple fallback strategies
+Future<bool> playTrackInPlaylist({
   required String playlistUri,
   required String trackUri,
   bool shuffle = true,
 }) async {
   try {
-    // Get user's active devices
-    var devices = await _spotify!.player.devices();
-    var deviceList = devices.toList();
-    
-    if (deviceList.isEmpty) {
-      debugPrint('No active Spotify devices found - attempting to activate...');
-      
-      // Wait a moment and try again (sometimes devices need time to register)
-      await Future.delayed(const Duration(seconds: 1));
-      devices = await _spotify!.player.devices();
-      deviceList = devices.toList();
-      
-      if (deviceList.isEmpty) {
-        debugPrint('Still no devices found after retry');
-        return false;
-      }
+    debugPrint('✓ Playing...');
+    // Strategy 1: Try to play on existing active device
+    if (await _tryPlayOnActiveDevice(playlistUri, trackUri, shuffle)) {
+      debugPrint('✓ Successfully played on active device');
+      return true;
     }
     
-    // Find the best device to use
-    spotify_sdk.Device? targetDevice;
+    debugPrint('No active device found, trying to activate...');
     
-    // First, try to find an already active device
-    targetDevice = deviceList.firstWhere(
+    // Strategy 2: Try to activate an available device and play
+    if (await _tryActivateAndPlay(playlistUri, trackUri, shuffle)) {
+      debugPrint('✓ Successfully activated device and played');
+      return true;
+    }
+    
+    debugPrint('Could not activate device, falling back to opening Spotify...');
+    
+    // Strategy 3: Open Spotify app and play in playlist context (last resort)
+    return await _openSpotifyAndPlay(trackUri, playlistUri); // Pass both URIs
+    
+  } catch (e) {
+    debugPrint('Error in playTrackInPlaylist: $e');
+    return false;
+  }
+}
+
+/// Strategy 1: Try to play on an active device
+Future<bool> _tryPlayOnActiveDevice(
+  String playlistUri,
+  String trackUri,
+  bool shuffle,
+) async {
+  try {
+    final devices = await _spotify!.player.devices();
+    final deviceList = devices.toList();
+    
+    if (deviceList.isEmpty) {
+      return false;
+    }
+    
+    // Find an already active device
+    final activeDevice = deviceList.firstWhere(
       (d) => d.isActive == true,
       orElse: () => deviceList.first,
     );
     
-    final deviceId = targetDevice.id;
-    
-    if (deviceId == null) {
-      debugPrint('Device ID is null');
+    // Only proceed if we found an actually active device
+    if (activeDevice.isActive != true) {
       return false;
     }
     
-    debugPrint('Using device: ${targetDevice.name} (active: ${targetDevice.isActive})');
-    
-    // If device is not active, activate it first by transferring playback
-    if (targetDevice.isActive != true) {
-      debugPrint('Device not active, activating...');
-      try {
-        await _spotify!.player.transfer(deviceId, false);
-        // Give it a moment to activate
-        await Future.delayed(const Duration(milliseconds: 500));
-      } catch (e) {
-        debugPrint('Could not transfer playback: $e');
-        // Continue anyway, might still work
-      }
+    final deviceId = activeDevice.id;
+    if (deviceId == null) {
+      return false;
     }
+    
+    debugPrint('Found active device: ${activeDevice.name}');
     
     // Enable shuffle if requested
     if (shuffle) {
       await _spotify!.player.shuffle(true, deviceId: deviceId);
     }
     
-    // Start playback with the playlist context and specific track
+    // Start playback
     await _spotify!.player.startWithContext(
         playlistUri, 
         deviceId: deviceId,
         offset: spotify_sdk.UriOffset(trackUri)
       );
     
-    debugPrint('Started playing $trackUri in playlist $playlistUri');
     return true;
-    
   } catch (e) {
-    debugPrint('Error playing track: $e');
+    debugPrint('Error in _tryPlayOnActiveDevice: $e');
     return false;
   }
 }
+
+/// Strategy 2: Try to activate a device and play
+Future<bool> _tryActivateAndPlay(
+  String playlistUri,
+  String trackUri,
+  bool shuffle,
+) async {
+  try {
+    // Wait a moment for devices to register
+    await Future.delayed(const Duration(seconds: 1));
+    
+    final devices = await _spotify!.player.devices();
+    final deviceList = devices.toList();
+    
+    if (deviceList.isEmpty) {
+      debugPrint('No devices available to activate');
+      return false;
+    }
+    
+    // Get first available device (even if not active)
+    final device = deviceList.first;
+    final deviceId = device.id;
+    
+    if (deviceId == null) {
+      return false;
+    }
+    
+    debugPrint('Attempting to activate device: ${device.name}');
+    
+    try {
+      // Try to transfer playback to activate the device
+      await _spotify!.player.transfer(deviceId, false);
+      
+      // Give device time to activate
+      await Future.delayed(const Duration(milliseconds: 800));
+      
+      // Enable shuffle if requested
+      if (shuffle) {
+        await _spotify!.player.shuffle(true, deviceId: deviceId);
+      }
+      
+      // Try to start playback
+      await _spotify!.player.startWithContext(
+        playlistUri, 
+        deviceId: deviceId,
+        offset: spotify_sdk.UriOffset(trackUri)
+      );
+      
+      return true;
+    } catch (e) {
+      debugPrint('Failed to activate and play: $e');
+      return false;
+    }
+  } catch (e) {
+    debugPrint('Error in _tryActivateAndPlay: $e');
+    return false;
+  }
+}
+
+/// Strategy 3 with platform-specific handling
+Future<bool> _openSpotifyAndPlay(String trackUri, String playlistUri) async {
+  try {
+    final trackId = trackUri.split(':').last;
+    final playlistId = playlistUri.split(':').last;
+    
+    // For Android: Use Spotify's intent with playlist context
+    if (Platform.isAndroid) {
+      // This intent tells Spotify to play the playlist starting at the track
+      final androidIntent = Uri.parse(
+        'spotify:playlist:$playlistId:play?uri=spotify:track:$trackId'
+      );
+      
+      if (await canLaunchUrl(androidIntent)) {
+        debugPrint('Opening Spotify via Android intent with playlist context');
+        await launchUrl(
+          androidIntent,
+          mode: LaunchMode.externalApplication,
+        );
+        await Future.delayed(const Duration(seconds: 2));
+        return true;
+      }
+    }
+    
+    // For iOS or fallback: Use universal link
+    // Spotify URI scheme with track in playlist context
+    final spotifyUri = Uri.parse('spotify:playlist:$playlistId:track:$trackId');
+    
+    if (await canLaunchUrl(spotifyUri)) {
+      debugPrint('Opening Spotify with playlist context');
+      await launchUrl(
+        spotifyUri,
+        mode: LaunchMode.externalApplication,
+      );
+      await Future.delayed(const Duration(seconds: 2));
+      return true;
+    }
+    
+    // Web fallback
+    final webUrl = Uri.parse(
+      'https://open.spotify.com/playlist/$playlistId?uri=spotify:track:$trackId'
+    );
+    
+    if (await canLaunchUrl(webUrl)) {
+      debugPrint('Opening Spotify web player with playlist context');
+      await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      return true;
+    }
+    
+    return false;
+    
+  } catch (e) {
+    debugPrint('Error opening Spotify: $e');
+    return false;
+  }
+}
+
+//   Future<bool> playTrackInPlaylist({
+//   required String playlistUri,
+//   required String trackUri,
+//   bool shuffle = true,
+// }) async {
+//   try {
+//     // Get user's active devices
+//     var devices = await _spotify!.player.devices();
+//     var deviceList = devices.toList();
+    
+//     if (deviceList.isEmpty) {
+//       debugPrint('No active Spotify devices found - attempting to activate...');
+      
+//       // Wait a moment and try again (sometimes devices need time to register)
+//       await Future.delayed(const Duration(seconds: 1));
+//       devices = await _spotify!.player.devices();
+//       deviceList = devices.toList();
+      
+//       if (deviceList.isEmpty) {
+//         debugPrint('Still no devices found after retry');
+//         return false;
+//       }
+//     }
+    
+//     // Find the best device to use
+//     spotify_sdk.Device? targetDevice;
+    
+//     // First, try to find an already active device
+//     targetDevice = deviceList.firstWhere(
+//       (d) => d.isActive == true,
+//       orElse: () => deviceList.first,
+//     );
+    
+//     final deviceId = targetDevice.id;
+    
+//     if (deviceId == null) {
+//       debugPrint('Device ID is null');
+//       return false;
+//     }
+    
+//     debugPrint('Using device: ${targetDevice.name} (active: ${targetDevice.isActive})');
+    
+//     // If device is not active, activate it first by transferring playback
+//     if (targetDevice.isActive != true) {
+//       debugPrint('Device not active, activating...');
+//       try {
+//         await _spotify!.player.transfer(deviceId, false);
+//         // Give it a moment to activate
+//         await Future.delayed(const Duration(milliseconds: 500));
+//       } catch (e) {
+//         debugPrint('Could not transfer playback: $e');
+//         // Continue anyway, might still work
+//       }
+//     }
+    
+//     // Enable shuffle if requested
+//     if (shuffle) {
+//       await _spotify!.player.shuffle(true, deviceId: deviceId);
+//     }
+    
+//     // Start playback with the playlist context and specific track
+//     await _spotify!.player.startWithContext(
+//         playlistUri, 
+//         deviceId: deviceId,
+//         offset: spotify_sdk.UriOffset(trackUri)
+//       );
+    
+//     debugPrint('Started playing $trackUri in playlist $playlistUri');
+//     return true;
+    
+//   } catch (e) {
+//     debugPrint('Error playing track: $e');
+//     return false;
+//   }
+// }
   // Future<bool> playTrackInPlaylist({
   //   required String playlistUri,
   //   required String trackUri,
