@@ -2,13 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spotify/spotify.dart' as spotify_sdk;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class SpotifyService extends ChangeNotifier {
-  static const String clientId = 'CLIENT_ID';
-  static const String clientSecret = 'CLIENT_SECRET';
-  static const String redirectUri = 'pixelgarden://callback';
+  static String get clientId => dotenv.env['SPOTIFY_CLIENT_ID'] ?? '';
+  static String get clientSecret => dotenv.env['SPOTIFY_CLIENT_SECRET'] ?? '';
+  static String get redirectUri => dotenv.env['SPOTIFY_REDIRECT_URI'] ?? '';
   
   spotify_sdk.SpotifyApi? _spotify;
   String? _accessToken;
@@ -58,10 +59,10 @@ class SpotifyService extends ChangeNotifier {
       } else {
         try {
           // Create SpotifyApi with OAuth credentials
-          final credentials = spotify_sdk.SpotifyApiCredentials(
-            clientId,
-            clientSecret,
-          );
+          // final credentials = spotify_sdk.SpotifyApiCredentials(
+          //   clientId,
+          //   clientSecret,
+          // );
           _spotify = spotify_sdk.SpotifyApi.withAccessToken(_accessToken!);
           _isAuthenticated = true;
         } catch (e) {
