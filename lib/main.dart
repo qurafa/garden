@@ -85,7 +85,7 @@ class _DeepLinkHandlerState extends State<DeepLinkHandler> {
     debugPrint('Host: ${uri.host}');
     debugPrint('Query params: ${uri.queryParameters}');
     
-    if (uri.scheme == 'pixelgarden' && uri.host == 'callback') {
+    if (uri.scheme == 'garden' && uri.host == 'callback') {
       final code = uri.queryParameters['code'];
       final error = uri.queryParameters['error'];
       
