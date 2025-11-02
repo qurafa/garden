@@ -347,48 +347,123 @@ class SpotifyService extends ChangeNotifier {
 
   /// Start playing a specific track in the context of a playlist
   Future<bool> playTrackInPlaylist({
-    required String playlistUri,
-    required String trackUri,
-    bool shuffle = true,
-  }) async {
-    try {
-      // Get user's active devices
-      final devices = await _spotify!.player.devices();
+  required String playlistUri,
+  required String trackUri,
+  bool shuffle = true,
+}) async {
+  try {
+    // Get user's active devices
+    var devices = await _spotify!.player.devices();
+    var deviceList = devices.toList();
+    
+    if (deviceList.isEmpty) {
+      debugPrint('No active Spotify devices found - attempting to activate...');
       
-      if (devices.isEmpty) {
-        debugPrint('No active Spotify devices found');
+      // Wait a moment and try again (sometimes devices need time to register)
+      await Future.delayed(const Duration(seconds: 1));
+      devices = await _spotify!.player.devices();
+      deviceList = devices.toList();
+      
+      if (deviceList.isEmpty) {
+        debugPrint('Still no devices found after retry');
         return false;
       }
-      
-      // Use the first available device (or you could let user choose)
-      final deviceId = devices.first.id;
-      
-      if (deviceId == null) {
-        debugPrint('Device ID is null');
-        return false;
+    }
+    
+    // Find the best device to use
+    spotify_sdk.Device? targetDevice;
+    
+    // First, try to find an already active device
+    targetDevice = deviceList.firstWhere(
+      (d) => d.isActive == true,
+      orElse: () => deviceList.first,
+    );
+    
+    final deviceId = targetDevice.id;
+    
+    if (deviceId == null) {
+      debugPrint('Device ID is null');
+      return false;
+    }
+    
+    debugPrint('Using device: ${targetDevice.name} (active: ${targetDevice.isActive})');
+    
+    // If device is not active, activate it first by transferring playback
+    if (targetDevice.isActive != true) {
+      debugPrint('Device not active, activating...');
+      try {
+        await _spotify!.player.transfer(deviceId, false);
+        // Give it a moment to activate
+        await Future.delayed(const Duration(milliseconds: 500));
+      } catch (e) {
+        debugPrint('Could not transfer playback: $e');
+        // Continue anyway, might still work
       }
-      
-      debugPrint('Playing on device: ${devices.first.name}');
-      
-      // Enable shuffle if requested
-      if (shuffle) {
-        await _spotify!.player.shuffle(true, deviceId: deviceId);
-      }
-      
-      // Start playback with the playlist context and specific track
-      await _spotify!.player.startWithContext(
+    }
+    
+    // Enable shuffle if requested
+    if (shuffle) {
+      await _spotify!.player.shuffle(true, deviceId: deviceId);
+    }
+    
+    // Start playback with the playlist context and specific track
+    await _spotify!.player.startWithContext(
         playlistUri, 
         deviceId: deviceId,
         offset: spotify_sdk.UriOffset(trackUri)
       );
-      debugPrint('Started playing $trackUri in playlist $playlistUri');
-      return true;
-      
-    } catch (e) {
-      debugPrint('Error playing track: $e');
-      return false;
-    }
+    
+    debugPrint('Started playing $trackUri in playlist $playlistUri');
+    return true;
+    
+  } catch (e) {
+    debugPrint('Error playing track: $e');
+    return false;
   }
+}
+  // Future<bool> playTrackInPlaylist({
+  //   required String playlistUri,
+  //   required String trackUri,
+  //   bool shuffle = true,
+  // }) async {
+  //   try {
+  //     // Get user's active devices
+  //     final devices = await _spotify!.player.devices();
+      
+  //     if (devices.isEmpty) {
+  //       debugPrint('No active Spotify devices found');
+  //       return false;
+  //     }
+      
+  //     // Use the first available device (or you could let user choose)
+  //     final deviceId = devices.first.id;
+      
+  //     if (deviceId == null) {
+  //       debugPrint('Device ID is null');
+  //       return false;
+  //     }
+      
+  //     debugPrint('Playing on device: ${devices.first.name}');
+      
+  //     // Enable shuffle if requested
+  //     if (shuffle) {
+  //       await _spotify!.player.shuffle(true, deviceId: deviceId);
+  //     }
+      
+  //     // Start playback with the playlist context and specific track
+  //     await _spotify!.player.startWithContext(
+  //       playlistUri, 
+  //       deviceId: deviceId,
+  //       offset: spotify_sdk.UriOffset(trackUri)
+  //     );
+  //     debugPrint('Started playing $trackUri in playlist $playlistUri');
+  //     return true;
+      
+  //   } catch (e) {
+  //     debugPrint('Error playing track: $e');
+  //     return false;
+  //   }
+  // }
   
   /// Check if user has active Spotify devices
   Future<bool> hasActiveDevice() async {
