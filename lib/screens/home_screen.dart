@@ -120,6 +120,7 @@ class _EmptyGardensView extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color.fromARGB(65, 27, 94, 31),
                 border: Border.all(color: Colors.green, width: 2),
+                borderRadius: BorderRadius.circular(6.25)
               ),
               child: const Icon(
                 Icons.add,
@@ -158,9 +159,9 @@ class _EmptyGardensView extends StatelessWidget {
                 backgroundColor: const Color(0xFF1DB954),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                  side: BorderSide(color: Colors.white, width: 2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6.25),
+                  side: const BorderSide(color: Colors.white, width: 2)
                 ),
               ),
               child: const Text(
@@ -190,7 +191,7 @@ class _GardenCard extends StatelessWidget {
       margin: EdgeInsets.zero,
       color: const Color.fromARGB(0, 0, 0, 0),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(0.0)
+        borderRadius: BorderRadius.circular(6.25)
       ),
       child: InkWell(
         onTap: () {
@@ -219,7 +220,7 @@ class _GardenCard extends StatelessWidget {
                     child: garden.playlistImageUrl != null
                         ? Image.network(
                             garden.playlistImageUrl!,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.fill,
                           )
                         : const Icon(
                             Icons.music_note,
@@ -339,9 +340,9 @@ class _AddGardenCard extends StatelessWidget {
     return Card(
       margin: EdgeInsets.zero,
       color: Colors.black38,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
-        side: BorderSide(color: Color.fromARGB(146, 76, 175, 79), width: 2),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6.25),
+        side: const BorderSide(color: Color.fromARGB(146, 76, 175, 79), width: 2),
       ),
       child: InkWell(
         onTap: () {
@@ -359,6 +360,7 @@ class _AddGardenCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color.fromARGB(42, 76, 175, 79),
                 border: Border.all(color: Colors.green, width: 2),
+                borderRadius: BorderRadius.circular(6.25)
               ),
               child: const Icon(
                 Icons.add,

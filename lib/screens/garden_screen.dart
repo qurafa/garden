@@ -136,7 +136,7 @@ class _GardenScreenState extends State<GardenScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _garden?.playlistName.toUpperCase() ?? 'GARDEN',
+          _garden?.playlistName ?? '',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             letterSpacing: 3,
@@ -417,6 +417,7 @@ Widget _buildGardenCanvas() {
           decoration: BoxDecoration(
             color: const Color(0xFF1a1a1a),
             border: Border.all(color: Colors.green, width: 3),
+            borderRadius: BorderRadius.circular(6.25),
             boxShadow: const [
               BoxShadow(
                 color:  Colors.black45,
@@ -438,6 +439,7 @@ Widget _buildGardenCanvas() {
                     border: Border(
                       bottom: BorderSide(color: Colors.green, width: 2),
                     ),
+                    borderRadius: BorderRadius.only(topLeft: Radius.circular(3.125), topRight: Radius.circular(3.125), bottomLeft: Radius.zero, bottomRight: Radius.zero)
                   ),
                   child: Row(
                     children: [
@@ -489,7 +491,7 @@ Widget _buildGardenCanvas() {
                             width: 120,
                             height: 120,
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.green, width: 2),
+                              border: Border.all(color: Colors.green, width: 1),
                             ),
                             child: Image.network(
                               flower.albumArt!,
@@ -560,11 +562,11 @@ Widget _buildGardenCanvas() {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () => _playTrackInGarden(flower),//_openInSpotify(flower.spotifyUri),
-                          icon: const Icon(Icons.play_circle_fill, size: 20),
+                          icon: const Icon(Icons.play_circle_fill, size: 25),
                           label: const Text(
                             'PLAY',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 2,
                             ),
@@ -573,9 +575,9 @@ Widget _buildGardenCanvas() {
                             backgroundColor: const Color(0xFF1DB954),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.zero,
-                              side: BorderSide(color: Colors.white, width: 2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6.25),
+                              side: const BorderSide(color: Colors.white, width: 2),
                             ),
                           ),
                         ),
