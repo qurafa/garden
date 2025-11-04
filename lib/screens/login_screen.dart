@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pixel_garden/painters/single_pixel_flower_painter.dart';
 import 'package:provider/provider.dart';
 import '../services/spotify_service.dart';
 
@@ -29,9 +30,10 @@ class LoginScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.black54,
                       border: Border.all(color: Colors.green, width: 3),
+                      borderRadius: BorderRadius.circular(12.5)
                     ),
                     child: const Text(
-                      'PIXEL GARDEN',
+                      'GARDEN',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -47,17 +49,17 @@ class LoginScreen extends StatelessWidget {
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      color: Colors.green.shade700,
+                      color: Colors.blueGrey,
                       border: Border.all(color: Colors.green, width: 2),
                     ),
                     child: CustomPaint(
-                      painter: PixelFlowerPainter(),
+                      painter: SinglePixelFlowerPainter(),
                     ),
                   ),
                   const SizedBox(height: 40),
                   
                   const Text(
-                    'Connect your Spotify to grow\nyour musical garden',
+                    'Connect your Spotify below...',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 18,
@@ -84,7 +86,7 @@ class LoginScreen extends StatelessWidget {
                         vertical: 16,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(0), // Pixel style
+                        borderRadius: BorderRadius.circular(12.5), // Pixel style
                         side: const BorderSide(color: Colors.white, width: 2),
                       ),
                     ),
@@ -105,15 +107,6 @@ class LoginScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 40),
-                  
-                  const Text(
-                    'Note: You\'ll need to set up your\nSpotify Developer credentials',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white38,
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -122,32 +115,4 @@ class LoginScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-// Simple pixel art flower painter
-class PixelFlowerPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-    final pixelSize = size.width / 10;
-    
-    // Draw a simple pixel flower
-    // Petals
-    paint.color = Colors.pink;
-    canvas.drawRect(Rect.fromLTWH(pixelSize * 3, pixelSize * 2, pixelSize * 2, pixelSize * 2), paint);
-    canvas.drawRect(Rect.fromLTWH(pixelSize * 5, pixelSize * 2, pixelSize * 2, pixelSize * 2), paint);
-    canvas.drawRect(Rect.fromLTWH(pixelSize * 3, pixelSize * 4, pixelSize * 2, pixelSize * 2), paint);
-    canvas.drawRect(Rect.fromLTWH(pixelSize * 5, pixelSize * 4, pixelSize * 2, pixelSize * 2), paint);
-    
-    // Center
-    paint.color = Colors.yellow;
-    canvas.drawRect(Rect.fromLTWH(pixelSize * 4, pixelSize * 3, pixelSize * 2, pixelSize * 2), paint);
-    
-    // Stem
-    paint.color = Colors.green;
-    canvas.drawRect(Rect.fromLTWH(pixelSize * 4.5, pixelSize * 5, pixelSize, pixelSize * 3), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

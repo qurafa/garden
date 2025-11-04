@@ -261,7 +261,7 @@ class _PlaylistCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       color: alreadyAdded ? Colors.black26 : Colors.black54,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(6.25),
         side: BorderSide(
           color: alreadyAdded ? Colors.grey : Colors.green,
           width: 2,
@@ -278,11 +278,11 @@ class _PlaylistCard extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 60,
-                height: 60,
+                width: 80,
+                height: 80,
                 decoration: BoxDecoration(
                   color: Colors.green.shade900,
-                  border: Border.all(color: Colors.green, width: 2),
+                  border: Border.all(color: Colors.green, width: 1),
                 ),
                 child: playlist.images != null && playlist.images!.isNotEmpty
                     ? Image.network(
